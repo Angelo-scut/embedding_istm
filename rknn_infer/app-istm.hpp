@@ -134,7 +134,7 @@ namespace istm{
         cv::Point2f homo_transform(const cv::Point2f& p);
         void width_point_transform(const cv::Vec4f& line);
 		void point_trace_center(const cv::Vec4f& line);
-		void point_trace_side(const int height, const int width, const int size);
+		void point_trace_side(const Mat& points);
         
         std::shared_ptr<Infer> infer_;
         std::vector<coord> clicks_;

@@ -1,9 +1,10 @@
-#include "app-istm.hpp"
 #include <atomic>
 #include <mutex>
 #include <queue>
 #include <fstream>
 #include <condition_variable>
+#include <numeric>
+#include "app-istm.hpp"
 #include "producer.hpp"
 #include "infer-rknn.hpp"
 #include "logger.hpp"
@@ -313,19 +314,19 @@ namespace istm{
 		}
 	}
 
-	void Istm::point_trace_side(const int height, const int width, const int size) {
+	void Istm::point_trace_side(const Mat& points) {
 		for (size_t i = 0; i < clicks_.size(); i++)
 		{
 			coord& click = clicks_[i];
 			int x = click.x;
 			int y = click.y;
+            ushort* point_ptr = (ushort*)points.ptr();
 			switch (trace_axis_)
 			{
 			case trace_axis::x: {  // x不变，y变
-				int num_point = atomic_count_cpu[x];
-				if (num_point < 2)	break;
-				auto y_up = points[x * height];  // 这个值应该是更小的
-				auto y_down = points[x * height + num_point - 1];
+				if (point_ptr[x * 2] == 0)	break;
+				auto y_up = point_ptr[x * 2];  // 这个值应该是更小的
+				auto y_down = point_ptr[x * 2 + 1];
 				int p_width = y_down - y_up;
 				int quater_0, quater_1;
 				if (click.is_positive)
@@ -342,10 +343,9 @@ namespace istm{
 				break;
 			}
 			case trace_axis::y: {  // y不变，x变
-				int num_point = atomic_count_cpu[y];
-				if (num_point < 2)	break;
-				auto x_up = points[y * width];
-				auto x_down = points[y * width + num_point - 1];
+				if (point_ptr[y * 2] == 0)	break;
+				auto x_up = point_ptr[y * 2];
+				auto x_down = point_ptr[y * 2 + 1];
 				int p_width = x_down - x_up;
 				int quater_0, quater_1;
 				if (click.is_positive)
@@ -367,29 +367,84 @@ namespace istm{
 	}
 
     cv::Vec4f Istm::weld_center_line(cv::Mat& result){
-        cv::Vec4f line;
-		int size = 0;
-        switch (trace_axis_)
+        CV_Assert( result.channels() == 1 && result.dims == 2 );
+        CV_Assert( result.depth() == CV_8U);
+        if (trace_axis_ == trace_axis::y)
         {
-        case trace_axis::y:{
-            cv::flip
-            break;
-            }
-        case trace_axis::x:{
-            
-            break;
+            cv::rotate(result, result, ROTATE_90_COUNTERCLOCKWISE);
+        }
+
+        int rows = result.rows, cols = result.cols;
+        cv::AutoBuffer<int> buf_(cols + 1);
+        int* buf = buf_.data();
+        std::vector<int> width_vec(rows, 0);
+        cv::Mat points_mat(rows, 2, CV_16SC1);
+        std::vector<int> pos(rows, 0);
+        int count = 0, sum = 0;
+
+        for( int i = 0; i < rows; ++i )
+        {
+            int j, k = 0;
+            const uchar* ptr8 = result.ptr(i);
+            for( j = 0; j < cols; ++j )
+                if( ptr8[j] != 0 ) buf[k++] = j;
+
+            if( k > 0 )
+            {
+                ++count; // 仅用于记录有点的
+                int left = buf[0], right = buf[k - 1];
+                sum += right - left;
+                width_vec[i] = right - left;  // 宽度
+                pos[i] = 0.5 * (right + left);  // 中心线
+                ushort* point_ptr = (ushort*)points_mat.ptr(i);  // 原则上我不需要只要左点和右点
+                point_ptr[0] = left, point_ptr[1] = right;  // 除非画图以及点跟踪
             }
         }
-        // Mat center_image(height, width, CV_8UC1, workspace_->cpu());
-        // cv::imwrite("center_line.jpg", center_image);  // 因为是同一个stream，所以可以直接保存
 
-		if (trace_type_ == trace_type::center)
+        float mean = float(sum) / (count + 1e-12);  // 计算mean和标准差
+        float std_ = 0.;
+        for (int i = 0; i < rows; ++i)
+        {
+            int width = width_vec[i];
+            if ( width > 0)
+            {
+                std_ += std::pow((width - mean), 2);
+            }
+        }
+        std_ = std_ / (count + 1e-12);
+        std_ = std::sqrt(std_);
+        std_ = std_ < 10 ? 10. : std_;
+        std_ = std_ > mean ? mean : std_;
+        int uper = std::ceil(mean + 0.15 * std_);
+        int downer = std::ceil(mean - 0.15 * std_);
+
+        std::vector<cv::Point> points;  // 清洗outlier
+        int row = rows - 1;
+        for (int i = 0; i < rows; ++i)
+        {
+            int& width = width_vec[i];
+            if (width < uper && width > downer)
+            {
+                if (trace_axis_ == trace_axis::y)
+                    points.emplace_back(cv::Point(row - i, pos[i]));
+                else
+                    points.emplace_back(cv::Point(pos[i], i));
+            }
+        }
+
+        if (points.empty()) return cv::Vec4f();
+        
+        cv::Vec4f line;
+        cv::fitLine(points, line, cv::DIST_L2, 0, 0.01, 0.01);
+
+        if (trace_type_ == trace_type::center)
 		{
 			point_trace_center(line);
 		}
 		else if(trace_type_ == trace_type::side) {
-			point_trace_side(height, width, size);
+			point_trace_side(points_mat);
 		}
+
         return line;
     }
 
@@ -505,7 +560,7 @@ namespace istm{
 			{
 				plattle(input_image, result);
 			}
-            center_line = weld_center_line();
+            center_line = weld_center_line(result);
             if (!roi_.empty())
             {
                 center_line[2] += roi_.x;
