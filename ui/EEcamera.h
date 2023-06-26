@@ -27,7 +27,7 @@
 #include <future>
 #include <condition_variable>
 
-#include <istm.hpp>
+#include <app-istm.hpp>
 
 #define POSITIVE true
 #define NEGATIVE false
@@ -73,7 +73,7 @@ public:
     cv::Mat cam;
     //QString savePath;
     bool isSaved;
-    atomic<bool> isRecord = false;
+    bool isRecord = false;
     
     bool autoonce = false; //控制序列采集时，第一次先进行一次自动曝光
     bool roi;
@@ -144,7 +144,7 @@ private:
 	int roi_click_cout = 0;
 	bool isAddClick = false;
 	std::shared_ptr<istm::Istm> model = make_shared< istm::Istm>();
-	atomic<bool> is_model_load_ = false;
+    bool is_model_load_ = false;
 	bool checkPointOutofWindow(QPoint& pos);
 };
 

@@ -10,14 +10,13 @@ CONFIG += c++11
 
 SOURCES += \
     main.cpp \
-    ui/MonitorSystem.cpp \
-    ui/status_Label.cpp \
     modbus/modbusthread.cpp \
     rknn_infer/app-istm.cpp \
     rknn_infer/infer-rknn.cpp \
     rknn_infer/json.cpp \
     rknn_infer/logger.cpp \
-    rknn_infer/tensor.cpp
+    rknn_infer/tensor.cpp \
+    ui/EEcamera.cpp
 
 
 HEADERS += \
@@ -29,12 +28,11 @@ HEADERS += \
     rknn_infer/logger.hpp \
     rknn_infer/producer.hpp \
     rknn_infer/tensor.hpp \
-    ui/MonitorSystem.h \
-    ui/status_Label.h
+    ui/EEcamera.h
 
 
 FORMS += \
-    ui/MonitorSystem.ui
+    ui/EEcamera.ui
 
 INCLUDEPATH +=/usr/include/opencv \
                /usr/include/opencv2

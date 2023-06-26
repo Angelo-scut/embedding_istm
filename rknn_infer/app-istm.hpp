@@ -45,9 +45,9 @@ namespace istm{
     struct istm_input{
         cv::Mat image;
         cv::Mat pre_mask;
-        vector<coord> clicks;
+        std::vector<coord> clicks;
         istm_input(){}
-        istm_input(const cv::Mat& image, cv::Mat& pre_mask, const vector<coord>& clicks):image(image), pre_mask(pre_mask), clicks(clicks){}
+        istm_input(const cv::Mat& image, cv::Mat& pre_mask, const std::vector<coord>& clicks):image(image), pre_mask(pre_mask), clicks(clicks){}
     };
 
     class Infer{
@@ -66,7 +66,7 @@ namespace istm{
         Istm(){
 			infer_ = create_infer("", 0.49);
 		}
-        Istm(const string& engine_file, float threshold = 0.5f){
+        Istm(const std::string& engine_file, float threshold = 0.5f){
             // if(iLogger::end_with(engine_file, "onnx")){
 
             // }
@@ -86,16 +86,16 @@ namespace istm{
 			threshold_ = 0.49f;
 		}
 
-        static bool build_model(const string& model_file);
+        static bool build_model(const std::string& model_file);
 
-        bool reset(const string& engine_file, float threshold = 0.5f);
+        bool reset(const std::string& engine_file, float threshold = 0.5f);
 
         cv::Mat forward(const cv::Mat& image, const cv::Mat& init_mask = cv::Mat());
 
         void undo_click();
 		void add_click(coord click);
 		void clicks_clear();
-        const vector<coord> get_clicks() const{ return clicks_; }
+        const std::vector<coord> get_clicks() const{ return clicks_; }
 
         void set_keyhole(cv::Point keyhole){ keyhole_ = keyhole; }
         cv::Point get_keyhole() const { return keyhole_; }
@@ -134,7 +134,7 @@ namespace istm{
         cv::Point2f homo_transform(const cv::Point2f& p);
         void width_point_transform(const cv::Vec4f& line);
 		void point_trace_center(const cv::Vec4f& line);
-		void point_trace_side(const Mat& points);
+        void point_trace_side(const cv::Mat& points);
         
         std::shared_ptr<Infer> infer_;
         std::vector<coord> clicks_;
