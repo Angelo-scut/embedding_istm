@@ -33,17 +33,63 @@ HEADERS += \
 
 FORMS += \
     ui/EEcamera.ui
-
-INCLUDEPATH +=/usr/include/opencv \
-               /usr/include/opencv2
+ROOT_PATH = /home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm
+#INCLUDEPATH +=/usr/include/opencv \
+#               /usr/include/opencv2
 INCLUDEPATH += /usr/include/knn
 INCLUDEPATH += /usr/include/modbus
-INCLUDEPATH += ./modbus
-INCLUDEPATH += ./rknn_infer
-INCLUDEPATH += ./ui
-INCLUDEPATH += ./source
+INCLUDEPATH += /home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/include
+INCLUDEPATH += /home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/include/opencv2
+INCLUDEPATH += /home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/modbus
+INCLUDEPATH += /home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/rknn_infer
+INCLUDEPATH += /home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/ui
+INCLUDEPATH += /home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/source
 LIBS += /usr/lib/aarch64-linux-gnu/librknn_api.so
-LIBS += /usr/lib/aarch64-linux-gnu/libopencv_*.so
+#LIBS += /usr/lib/aarch64-linux-gnu/libopencv_*.so
+#LIBS += /home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_*.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_stitching.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_core.so.405
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_stitching.so.4.5.5
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_stitching.so.405
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_imgproc.so.405
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_videoio.so.405
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_ml.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_flann.so.405
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_video.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_features2d.so.405
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_imgcodecs.so.4.5.5
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_dnn.so.405
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_videoio.so.4.5.5
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_core.so.4.5.5
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_imgcodecs.so.405
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_objdetect.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_objdetect.so.4.5.5
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_features2d.so.4.5.5
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_flann.so.4.5.5
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_calib3d.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_highgui.so.4.5.5
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_core.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_highgui.so.405
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_video.so.4.5.5
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_calib3d.so.405
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_videoio.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_photo.so.4.5.5
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_imgcodecs.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_ml.so.405
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_imgproc.so.4.5.5
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_dnn.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_photo.so.405
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_photo.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_features2d.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_flann.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_ml.so.4.5.5
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_dnn.so.4.5.5
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_video.so.405
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_calib3d.so.4.5.5
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_imgproc.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_highgui.so
+LIBS+=/home/firefly/Desktop/K-TIG_Welding_Monitor_System/weldingMonitor/embedding_istm/opencv-4.5.5/lib/libopencv_objdetect.so.405
+
 LIBS += /usr/lib/aarch64-linux-gnu/libmodbus.so
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

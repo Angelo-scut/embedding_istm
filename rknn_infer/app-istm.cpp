@@ -143,7 +143,7 @@ namespace istm{
 
     shared_ptr<Infer> create_infer(
         const std::string& engine_file,
-        float confidence_threshold, float nms_threshold
+        float confidence_threshold
     ){
         shared_ptr<InferImpl> instance(new InferImpl());
         if(!instance->startup(
@@ -154,7 +154,7 @@ namespace istm{
         return instance;
     }
 
-    bool Istm::reset(const string& engine_file, float threshold){
+    bool Istm::reset(const std::string& engine_file, float threshold){
 		infer_ = create_infer(engine_file, threshold);  // 这边是赋值，那边是构造
         if (infer_ == nullptr)
         {
@@ -253,7 +253,7 @@ namespace istm{
         
     }
 
-    void plattle(cv::Mat& image, cv::Mat& result){
+    void Istm::plattle(cv::Mat& image, cv::Mat& result){
         cv::Size image_size = cv::Size(image.cols, image.rows);
         cv::Size result_size = cv::Size(result.cols, result.rows);
         if (image_size != result_size)
@@ -527,7 +527,7 @@ namespace istm{
 
     void Istm::infer_and_draw(cv::Mat& image){
 		lock_guard<mutex> l_infer(infer_lock_);
-		Mat input_image = image(cv::Rect(0, 0, image.cols, image.rows));
+        cv::Mat input_image = image(cv::Rect(0, 0, image.cols, image.rows));
 		if (!roi_.empty())
 		{
 			input_image = image(roi_);
@@ -551,14 +551,14 @@ namespace istm{
 
 			if (!roi_.empty())
 			{
-				Mat roi;
+                cv::Mat roi;
 				input_image.copyTo(roi);
-				plattle(roi, result);
+                this->plattle(roi, result);
 				roi.copyTo(input_image);
 			}
 			else
 			{
-				plattle(input_image, result);
+                this->plattle(input_image, result);
 			}
             center_line = weld_center_line(result);
             if (!roi_.empty())

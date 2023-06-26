@@ -1,7 +1,7 @@
 #ifndef APP_ISTM_HPP
 #define APP_ISTM_HPP
 
-#include <opencv2/opencv.hpp>
+#include <opencv.hpp>
 #include <future>
 #include <vector>
 #include <memory>
@@ -66,7 +66,7 @@ namespace istm{
         Istm(){
 			infer_ = create_infer("", 0.49);
 		}
-        Istm(const std::string& engine_file, float threshold = 0.5f){
+        Istm(const std::string& engine_file, float threshold = 0.49f){
             // if(iLogger::end_with(engine_file, "onnx")){
 
             // }
@@ -155,6 +155,6 @@ namespace istm{
         float threshold_        = 0.49f;
         
     }; 
-}; // namespace istm
+} // namespace istm
 
 #endif // KIWI_APP_SCRFD_HPP

@@ -492,8 +492,6 @@ void EEcamera::modelLoadEvent(){
 		//model = make_shared<istm::Istm>(file.toStdString());
 		if (!model->reset(file.toStdString())) 
 		{
-			std::string builded_file = istm::build_model(file.toStdString());
-			if (builded_file.empty() && !model->reset(builded_file))  // 短路性质，如果前面是空，则不会进入第二个判断
 			{
 				modelWidgetState(false);
 				ShowErrorMsg("Invalid model.");
