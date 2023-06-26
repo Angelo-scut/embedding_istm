@@ -111,7 +111,7 @@ public:
     status_Lable* welding_speed;
     status_Lable* wire_speed;
 
-    segmentation seg_network=segmentation();
+//    segmentation seg_network=segmentation();
     bool isSeg = false;
     bool isInit = false;
     bool isROIsetting = false;
@@ -154,6 +154,17 @@ public slots:
     void imageShowevent();
     void dataProcessandShow();
 private:
+    void modelWidetState(bool state=false);
+    void keyholeEvent();
+    void netRoiEvent();
+    void modelLoadEvent();
+    void addClickEvent();
+    void clearClickEvent();
+    void axisChangeEvent(QString);
+    void pTraceChangeEvent(QString);
+    void preMaskTypeChangeEvent(QString);
+    void checkPointOutofWindow(QPoint& pos);
+
     Ui::MonitorSystem *ui;
 };
 

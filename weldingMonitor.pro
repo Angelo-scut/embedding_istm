@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets network
 
@@ -9,25 +9,41 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    MonitorSystem.cpp \
     main.cpp \
-    segmentationNetwork.cpp \
-    status_Label.cpp \
-    modbusthread.cpp
+    ui/MonitorSystem.cpp \
+    ui/status_Label.cpp \
+    modbus/modbusthread.cpp \
+    rknn_infer/app-istm.cpp \
+    rknn_infer/infer-rknn.cpp \
+    rknn_infer/json.cpp \
+    rknn_infer/logger.cpp \
+    rknn_infer/tensor.cpp
+
 
 HEADERS += \
-    MonitorSystem.h \
-    segmentationNetwork.h \
-    status_Label.h \
-    modbusthread.h
+    modbus/modbusthread.h \
+    rknn_infer/app-istm.hpp \
+    rknn_infer/infer.hpp \
+    rknn_infer/infer-rknn.hpp \
+    rknn_infer/json.hpp \
+    rknn_infer/logger.hpp \
+    rknn_infer/producer.hpp \
+    rknn_infer/tensor.hpp \
+    ui/MonitorSystem.h \
+    ui/status_Label.h
+
 
 FORMS += \
-    MonitorSystem.ui
+    ui/MonitorSystem.ui
 
 INCLUDEPATH +=/usr/include/opencv \
                /usr/include/opencv2
 INCLUDEPATH += /usr/include/knn
 INCLUDEPATH += /usr/include/modbus
+INCLUDEPATH += ./modbus
+INCLUDEPATH += ./rknn_infer
+INCLUDEPATH += ./ui
+INCLUDEPATH += ./source
 LIBS += /usr/lib/aarch64-linux-gnu/librknn_api.so
 LIBS += /usr/lib/aarch64-linux-gnu/libopencv_*.so
 LIBS += /usr/lib/aarch64-linux-gnu/libmodbus.so

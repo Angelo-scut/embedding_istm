@@ -1025,7 +1025,6 @@ void MonitorSystem::setKeyholePointEvent(){
 
 }
 
-
 void MonitorSystem::setSeamPointEvent(){
 
     isSettingKeyholePoint = false;
@@ -1039,7 +1038,6 @@ void MonitorSystem::setSeamPointEvent(){
 
 }
 
-
 void MonitorSystem::deletePointEvent(){
     if (!deletePoint) deletePoint = true;
     ui->setKeyholePoint->setEnabled(true);
@@ -1047,7 +1045,6 @@ void MonitorSystem::deletePointEvent(){
     ui->deletePoint->setEnabled(false);
     return;
 }
-
 
 void MonitorSystem::finishSetPointEvent(){
     if (!isSettingKeyholePoint && !isSettingSeamPoint) return ;
@@ -1096,3 +1093,5 @@ void MonitorSystem::finishSetPointEvent(){
 void MonitorSystem::flipEvent(){
     this->isFlip = !this->isFlip;
 }
+
+
