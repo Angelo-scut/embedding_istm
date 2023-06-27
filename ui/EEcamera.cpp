@@ -44,23 +44,23 @@ EEcamera::EEcamera(QWidget *parent)
 
 void EEcamera::cameraOpenEvent()
 {
-    bool flag = this->camera.open(this->device_num);
-    if (!flag) {
-        ShowErrorMsg("Failed to Open Camera", 0);
-        return;
-    }
-    this->camera.set(3, 1920);
-    this->camera.set(4, 1080);
+//    bool flag = this->camera.open(this->device_num);
+//    if (!flag) {
+//        ShowErrorMsg("Failed to Open Camera", 0);
+//        return;
+//    }
+//    this->camera.set(3, 1920);
+//    this->camera.set(4, 1080);
 
-    flag = this->camera.read(cam);
-    if (!flag) {
-        ShowErrorMsg("Failed to Read Image", 0);
-        this->camera.release();
-        return;
-    }
+//    flag = this->camera.read(cam);
+//    if (!flag) {
+//        ShowErrorMsg("Failed to Read Image", 0);
+//        this->camera.release();
+//        return;
+//    }
 
     cam.copyTo(this->myImage);
-    //this->myImage = cv::imread("1.jpg"); //测试
+    this->myImage = cv::imread(root_path + "0.jpg"); //测试
     this->cx = int(this->myImage.cols / 2); cy = int(this->myImage.rows / 2); w = cx; h = cy;
     this->cx = this->cx - int(w / 2);
     this->cy = this->cy - int(h / 2);
@@ -101,8 +101,8 @@ void EEcamera::capture_t()  // 这边肯定是生产者
     {
 		{
 			unique_lock<std::mutex> l_cap(image_lock_);
-			flag = this->camera.read(cam); // open which camera
-			//cam = cv::imread("1.jpg"); //测试
+//			flag = this->camera.read(cam); // open which camera
+            cam = cv::imread(root_path + "0.jpg"); //测试
 			if (!flag) {  // 如果没采集到还可以再继续看能不能恢复
 				if (!this->is_camera_open_) // close and end recording
 				{
@@ -501,7 +501,7 @@ void EEcamera::modelLoadEvent(){
 		{
 			modelWidgetState(true);
 			is_model_load_ = true;
-			model->homo_matrix_from_file("homo_matrix.txt");
+            model->homo_matrix_from_file(root_path + "homo_matrix.txt");
 		}
 	}
 }

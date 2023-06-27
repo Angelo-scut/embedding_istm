@@ -146,6 +146,8 @@ private:
 	std::shared_ptr<istm::Istm> model = make_shared< istm::Istm>();
     bool is_model_load_ = false;
 	bool checkPointOutofWindow(QPoint& pos);
+
+    std::string root_path = "/home/firefly/Desktop/K-TIG_Welding_Monitor_System/config/";
 };
 
 

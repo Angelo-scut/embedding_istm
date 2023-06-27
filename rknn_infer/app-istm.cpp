@@ -59,7 +59,7 @@ namespace istm{
             auto input_tensor               = engine->input(0);  // 两个input怎么办？
             auto input_coord_tensor         = engine->input(1);
             auto output                     = engine->output();
-            float deconfidence_threshold    = desigmoid(confidence_threshold_);  // 哇，好聪明，直接把threshold反向sigmoid，这样就避免了其他的大量sigmoid了
+//            float deconfidence_threshold    = desigmoid(confidence_threshold_);  // 哇，好聪明，直接把threshold反向sigmoid，这样就避免了其他的大量sigmoid了
             
             input_width_       = input_tensor->size(3);
             input_height_      = input_tensor->size(2);
@@ -69,7 +69,7 @@ namespace istm{
             Job fetch_job;
             cv::Size target_size(input_width_, input_height_);
             cv::Mat input_image(input_height_, input_width_, CV_8UC3, input_tensor->cpu());
-            cv::Mat input_coord(input_height_, input_width_, CV_8UC3, input_tensor->cpu());
+            cv::Mat input_coord(input_height_, input_width_, CV_8UC3, input_coord_tensor->cpu());
             float* optr = output->cpu<float>();
 
             while(get_job_and_wait(fetch_job)){                
@@ -202,7 +202,8 @@ namespace istm{
 
 	void Istm::add_click(coord click) {
 		lock_guard<mutex> l(clicks_lock_);
-		if (!roi_.empty())
+//		if (!roi_.empty())
+        if (roi_.x != 0)
 		{
 			click.x = click.x - roi_.x;
 			click.y = click.y - roi_.y;
@@ -256,15 +257,19 @@ namespace istm{
     void Istm::plattle(cv::Mat& image, cv::Mat& result){
         cv::Size image_size = cv::Size(image.cols, image.rows);
         cv::Size result_size = cv::Size(result.cols, result.rows);
+        result.convertTo(result, CV_8UC1);
         if (image_size != result_size)
         {
             cv::resize(result, result, image_size, 0, 0, cv::InterpolationFlags::INTER_NEAREST);
         }
         
         Mat color_mask(image_size, CV_8UC3, cv::Scalar(0, 0, 255));
-        cv::add(color_mask, 0, color_mask, result, CV_8UC3);
+//        color_mask.mul(result);
+//        cv::imwrite("result_map.jpg", result * 255);
+        Mat mask;
+        cv::add(color_mask, 0, mask, result);
 
-        cv::addWeighted(image, 0.4, color_mask, 0.6, 0, image);
+        cv::addWeighted(image, 0.6, mask, 0.4, 0, image);
         return;
     }
 
@@ -375,8 +380,9 @@ namespace istm{
         }
 
         int rows = result.rows, cols = result.cols;
-        cv::AutoBuffer<int> buf_(cols + 1);
-        int* buf = buf_.data();
+//        cv::AutoBuffer<int> buf_(cols + 1);
+        cv::Mat buf_(1, cols, CV_32SC1);
+        int* buf = (int*)buf_.data;
         std::vector<int> width_vec(rows, 0);
         cv::Mat points_mat(rows, 2, CV_16SC1);
         std::vector<int> pos(rows, 0);
@@ -402,28 +408,29 @@ namespace istm{
         }
 
         float mean = float(sum) / (count + 1e-12);  // 计算mean和标准差
-        float std_ = 0.;
-        for (int i = 0; i < rows; ++i)
-        {
-            int width = width_vec[i];
-            if ( width > 0)
-            {
-                std_ += std::pow((width - mean), 2);
-            }
-        }
-        std_ = std_ / (count + 1e-12);
-        std_ = std::sqrt(std_);
-        std_ = std_ < 10 ? 10. : std_;
-        std_ = std_ > mean ? mean : std_;
-        int uper = std::ceil(mean + 0.15 * std_);
-        int downer = std::ceil(mean - 0.15 * std_);
+//        float std_ = 0.;
+//        for (int i = 0; i < rows; ++i)
+//        {
+//            int width = width_vec[i];
+//            if ( width > 0)
+//            {
+//                std_ += std::pow((width - mean), 2);
+//            }
+//        }
+//        std_ = std_ / (count + 1e-12);
+//        std_ = std::sqrt(std_);
+//        std_ = std_ < 10 ? 10. : std_;
+//        std_ = std_ > mean ? mean : std_;
+//        int uper = std::ceil(mean + 0.15 * std_);
+//        int downer = std::ceil(mean - 0.15 * std_);
 
         std::vector<cv::Point> points;  // 清洗outlier
         int row = rows - 1;
         for (int i = 0; i < rows; ++i)
         {
             int& width = width_vec[i];
-            if (width < uper && width > downer)
+//            if (width < uper && width > downer)
+            if(width > mean)
             {
                 if (trace_axis_ == trace_axis::y)
                     points.emplace_back(cv::Point(row - i, pos[i]));
@@ -528,7 +535,8 @@ namespace istm{
     void Istm::infer_and_draw(cv::Mat& image){
 		lock_guard<mutex> l_infer(infer_lock_);
         cv::Mat input_image = image(cv::Rect(0, 0, image.cols, image.rows));
-		if (!roi_.empty())
+//		if (!roi_.empty())
+        if (roi_.width != 0)
 		{
 			input_image = image(roi_);
 		}
@@ -545,11 +553,11 @@ namespace istm{
         if (!result.empty())
         {
 
-            int width = input_image.cols;
-            int height = input_image.rows;
-            if(!(height == result.rows && width == result.cols)) return;
+//            int width = input_image.cols;
+//            int height = input_image.rows;
+//            if(!(height == result.rows && width == result.cols)) return;
 
-			if (!roi_.empty())
+            if (roi_.width != 0)
 			{
                 cv::Mat roi;
 				input_image.copyTo(roi);
@@ -561,16 +569,16 @@ namespace istm{
                 this->plattle(input_image, result);
 			}
             center_line = weld_center_line(result);
-            if (!roi_.empty())
+//            if (!roi_.empty())
+            if (roi_.width != 0)
             {
                 center_line[2] += roi_.x;
                 center_line[3] += roi_.y;
             }
             
-            //Mat temp(input_image.rows, input_image.cols, CV_8UC1, workspace_->cpu());
-            //cv::imwrite("corner.jpg", temp * 255);
-             //temp.copyTo(input_image);
-			 //input_image = input_image * 255;
+//            result = result * 255;
+//            cv::cvtColor(result, result, CV_GRAY2BGR);
+//            result.copyTo(image);
             
         }
 		{
@@ -596,7 +604,7 @@ namespace istm{
             }
             
         }
-        if (!roi_.empty())
+        if (roi_.width != 0)
         {
             cv::rectangle(image, roi_, cv::Scalar(0, 255, 0), 1);
         }

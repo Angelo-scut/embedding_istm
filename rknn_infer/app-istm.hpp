@@ -65,6 +65,7 @@ namespace istm{
         // Istm() = delete;
         Istm(){
 			infer_ = create_infer("", 0.49);
+            pre_mask_ = cv::Mat();
 		}
         Istm(const std::string& engine_file, float threshold = 0.49f){
             // if(iLogger::end_with(engine_file, "onnx")){
@@ -72,6 +73,7 @@ namespace istm{
             // }
             infer_ = create_infer(engine_file, threshold);
             threshold_ = threshold;
+            pre_mask_ = cv::Mat();
             init_filter();
         }
 
@@ -120,6 +122,7 @@ namespace istm{
         float get_deviation() const { return deviation_; }
 
         void infer_and_draw(cv::Mat& image);
+        cv::Mat get_pre_mask(){return pre_mask_;}
 
     private:
         cv::Point2f homography_transfom(float x, float y);
