@@ -33,6 +33,7 @@
 #define NEGATIVE false
 using namespace std;
 int align_32(int value);
+void save_txt(const std::string& file, std::queue<float>& data);
 class EEcamera : public QWidget
 {
 	Q_OBJECT
@@ -116,26 +117,33 @@ private:
 	void save_t();
 	void stack_t();
 	void show_t();
-	void time_save_event();
+    void txt_save_event();
 	std::mutex image_lock_;
 	std::mutex image_seq_lock_;
+    std::mutex result_seq_lock_;
+    std::mutex qmat_lock_;
 	std::queue<cv::Mat> img_seq;
+    std::queue<cv::Mat> result_seq;
 	float time_int = 0.0f;
 	std::queue<float> time_seq;
+    std::queue<float> deviation_seq;
+    std::queue<float> width_seq;
 	bool get_show_mat();
 	bool get_stack_mat();
 	//bool get_save_seq();
 	condition_variable show_cond_;
 	condition_variable stack_cond_;
 	condition_variable save_cond_;
-	shared_ptr<promise<bool>> show_pro_ = make_shared<promise<bool>>();
-	shared_ptr<promise<bool>> stack_pro_ = make_shared<promise<bool>>();
-	shared_ptr<promise<bool>> save_pro_ = make_shared<promise<bool>>();
+//	shared_ptr<promise<bool>> show_pro_ = make_shared<promise<bool>>();
+//	shared_ptr<promise<bool>> stack_pro_ = make_shared<promise<bool>>();
+//	shared_ptr<promise<bool>> save_pro_ = make_shared<promise<bool>>();
 	void release_capture();
 	void release_show();
 	void release_save();
 	void release_stack();
 	void save_one_image();
+    void push_image();
+    void push_detection_result();
 
 	bool isKeyhole = false;
 	bool isModelroi = false;

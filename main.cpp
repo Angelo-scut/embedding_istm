@@ -1,6 +1,9 @@
 //#include "MonitorSystem.h"
 #include "EEcamera.h"
 //#include "app-istm.hpp"
+//#include "logger.hpp"
+//#include <vector>
+//#include <iostream>
 
 #include <QApplication>
 #include <QLocale>
@@ -9,11 +12,18 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-//    MonitorSystem w;
     EEcamera w;
     w.show();
     return a.exec();
 }
+
+//void listdir_test(){
+//    std::string root_path = "/home/firefly/Desktop/K-TIG_Welding_Monitor_System/config/";
+//    std::vector<string> files_vec = kiwi::find_files(root_path);
+//    for(auto file:files_vec){
+//        std::cout << file << std::endl;
+//    }
+//}
 
 
 //int main(int argc, char *argv[]){

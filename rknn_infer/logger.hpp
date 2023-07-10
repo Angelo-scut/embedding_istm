@@ -76,6 +76,8 @@ namespace kiwi{
 	//   abcdefg.png           *.png      > true
 	//   abcdefg.png          a?cdefg.png > true
 	bool pattern_match(const char* str, const char* matcher, bool igrnoe_case = true);
+    bool string_cmp(const string& s1, const string& s2);
+    void sort_files(vector<string> &files);
     vector<string> find_files(
         const string& directory, 
         const string& filter = "*", bool findDirectory = false, bool includeSubDirectory = false);

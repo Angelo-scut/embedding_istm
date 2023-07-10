@@ -1,4 +1,5 @@
 #include "EEcamera.h"
+#include "logger.hpp"
 #include <math.h>
 
 using namespace cv;
@@ -45,6 +46,7 @@ EEcamera::EEcamera(QWidget *parent)
 void EEcamera::cameraOpenEvent()
 {
 //    bool flag = this->camera.open(this->device_num);
+//    bool flag = this->camera.open(root_path + "1031.mp4");
 //    if (!flag) {
 //        ShowErrorMsg("Failed to Open Camera", 0);
 //        return;
@@ -59,7 +61,7 @@ void EEcamera::cameraOpenEvent()
 //        return;
 //    }
 
-    cam.copyTo(this->myImage);
+//    cam.copyTo(this->myImage);
     this->myImage = cv::imread(root_path + "0.jpg"); //测试
     this->cx = int(this->myImage.cols / 2); cy = int(this->myImage.rows / 2); w = cx; h = cy;
     this->cx = this->cx - int(w / 2);
@@ -96,18 +98,22 @@ void EEcamera::capture_t()  // 这边肯定是生产者
     bool flag = true;
     clock_t start, end;
     start = end = clock();
-	show_pro_->set_value(true);
+//	show_pro_->set_value(true);
+    std::vector<string> path_vec = kiwi::find_files(root_path + "2_puredata/");
+    kiwi::sort_files(path_vec);
+    uint file_num = 0, files_size = path_vec.size();
     while (is_camera_open_)
     {
 		{
-			unique_lock<std::mutex> l_cap(image_lock_);
-//			flag = this->camera.read(cam); // open which camera
-            cam = cv::imread(root_path + "0.jpg"); //测试
+//			unique_lock<std::mutex> l_cap(image_lock_);
+//            flag = this->camera.read(cam); // open which camera
+//            cam = cv::imread(root_path + "0.jpg"); //测试
+            if(file_num > (files_size - 1))
+                file_num = 0;
+            cam = cv::imread(path_vec[file_num]);
+//            std::cout << path_vec[file_num] << std::endl;
+            ++file_num;
 			if (!flag) {  // 如果没采集到还可以再继续看能不能恢复
-				if (!this->is_camera_open_) // close and end recording
-				{
-					return;
-				}
 				continue;
 			}
 			end = clock();
@@ -115,15 +121,29 @@ void EEcamera::capture_t()  // 这边肯定是生产者
 			start = clock();
 			
 		}
-		show_pro_->get_future().wait_for(std::chrono::seconds(1));
-		show_pro_ = make_shared<std::promise<bool>>();
-		show_cond_.notify_one();
-		if (!(stack_worker_ == nullptr))
-		{
-			stack_pro_->get_future().wait_for(std::chrono::seconds(1));
-			stack_pro_ = make_shared<std::promise<bool>>();
-			stack_cond_.notify_one();
-		}
+        if (!this->is_camera_open_) // close and end recording
+        {
+            return;
+        }
+        {
+            lock_guard<std::mutex> l_cap(image_lock_);
+            cam.copyTo(mat_for_show);
+            show_cond_.notify_one();
+        }
+        if(save_worker_){
+            push_image();
+        }
+//        show_pro_->get_future().wait_for(std::chrono::milliseconds(100));
+//		show_pro_ = make_shared<std::promise<bool>>();
+//        show_pro_ = shared_ptr<std::promise<bool>>(new std::promise<bool>);
+//		show_cond_.notify_one();
+//        if (stack_worker_)
+//		{
+//            stack_pro_->get_future().wait_for(std::chrono::milliseconds(100));
+//			stack_pro_ = make_shared<std::promise<bool>>();
+//            stack_pro_ = shared_ptr<std::promise<bool>>(new std::promise<bool>);
+//			stack_cond_.notify_one();
+//		}
         
         if(this->isCapture_once){
 			save_one_image();
@@ -146,9 +166,13 @@ bool EEcamera::get_show_mat() {
 
 void EEcamera::show_t()  // 消费者
 {
-	while (get_show_mat())
+    while (true)
 	{
-		if (mat_for_show.empty()) continue;
+        unique_lock<std::mutex> l_show(image_lock_);
+        show_cond_.wait(l_show);
+        if(!is_camera_open_) return;
+
+        if (mat_for_show.empty()) continue;
 		if (is_model_load_)
 		{
 			clock_t start, end;
@@ -157,24 +181,73 @@ void EEcamera::show_t()  // 消费者
 			end = clock();
 			time_int = 1.0 / (float(end - start) / CLOCKS_PER_SEC);
 			cv::putText(mat_for_show, std::to_string(time_int), cv::Point(20, 50), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0));
-		}
+            push_detection_result();
+        }
 		if (this->roi) {
 			rectangle(mat_for_show, imgROI, Scalar(255, 255, 255), 2, LINE_8, 0);
 		}
 		cv::resize(mat_for_show, mat_for_show, cv::Size(ui.imgShow->width(), ui.imgShow->height()));
-		qmat = this->cvMat2QImage(mat_for_show);
+        {
+            lock_guard<std::mutex> l_show_qmat(qmat_lock_);
+            qmat = this->cvMat2QImage(mat_for_show);
+        }
+
 		emit image_show_signal();
 	}
 }
 
 void EEcamera::image_show_slot() {
-	ui.imgShow->setPixmap(QPixmap::fromImage(qmat));  // TODO:信号槽的方式显示图像
+    {
+        lock_guard<std::mutex> l_slot(qmat_lock_);
+        ui.imgShow->setPixmap(QPixmap::fromImage(qmat));  // TODO:信号槽的方式显示图像
+    }
+
 	if (is_model_load_)
 	{
 		ui.gapWidthEdit->setText(QString::number(model->get_width()));
 		ui.DeviationEdit->setText(QString::number(model->get_deviation()));
 	}
-	show_pro_->set_value(true);
+//	show_pro_->set_value(true);
+}
+
+void EEcamera::push_image(){
+    if (!(is_camera_open_ && isRecord)) return;
+    {
+        lock_guard<mutex> l_seq_stack(image_seq_lock_);
+        if (this->roi) {
+            //Mat stack;
+            //cam(this->imgROI).copyTo(stack);
+            img_seq.emplace(std::move(cam(this->imgROI).clone()));
+        }
+        else
+        {
+            //Mat stack;
+            //cam.copyTo(stack);
+            img_seq.emplace(std::move(cam.clone()));
+        }
+        //float stack_time = time_int;
+        time_seq.emplace(time_int);
+    }
+    this->img_count++;
+    return;
+}
+
+void EEcamera::push_detection_result(){
+    if (!(is_camera_open_ && isRecord)) return;
+    {
+        lock_guard<mutex> l_seq_stack(result_seq_lock_);
+        if (this->roi) {
+            img_seq.emplace(std::move(mat_for_show(this->imgROI).clone()));
+        }
+        else
+        {
+            img_seq.emplace(std::move(mat_for_show.clone()));
+        }
+        deviation_seq.emplace(model->get_deviation());
+        width_seq.emplace(model->get_width());
+    }
+    this->img_count++;
+    return;
 }
 
 bool EEcamera::get_stack_mat() {
@@ -202,59 +275,77 @@ bool EEcamera::get_stack_mat() {
 }
 
 void EEcamera::stack_t(){  // 生产者和消费者
-	while (get_stack_mat())
-		stack_pro_->set_value(true);
+//	while (get_stack_mat())
+//		stack_pro_->set_value(true);
 }
 
-void EEcamera::time_save_event() {
+void save_txt(const std::string& file, std::queue<float>& data){
+    std::ofstream out_file;
+    if(!data.empty()){
+        out_file.open(file, std::ios::out | std::ios::trunc);
+
+        while(!data.empty())
+        {
+            out_file << data.front() << endl;
+            data.pop();
+        }
+        out_file.close();
+    }
+}
+
+void EEcamera::txt_save_event() {
 	if (savePath == NULL) return;
-	std::ofstream out_file;
-	std::string txt_file_name = this->savePath.toStdString() + '/' + "time.txt";
+    std::string time_file_name = this->savePath.toStdString() + '/' + "time.txt";
+    std::string width_file_name = this->savePath.toStdString() + '/' + "width.txt";
+    std::string deviation_file_name = this->savePath.toStdString() + '/' + "deviation.txt";
 
-	if (!time_seq.empty())
-	{
-		out_file.open(txt_file_name, std::ios::out | std::ios::trunc);
+    save_txt(time_file_name, time_seq);
+    save_txt(width_file_name, width_seq);
+    save_txt(deviation_file_name, deviation_seq);
 
-		for (size_t i = 0; !time_seq.empty(); i++)
-		{
-			out_file << time_seq.front() << endl;
-			time_seq.pop();
-		}
-		out_file.close();
-	}
 	return;
 }
 
 void EEcamera::save_t() {  // 消费者
 	std::queue<cv::Mat> temp_image;
-	//std::queue<float> temp_time;
-	int count = 10000;
+    std::queue<cv::Mat> temp_result;
+    int count = 10000, result_cnt = 10000;
 	while (1) {
 		{
 			lock_guard<std::mutex> l_seq_save(image_seq_lock_);
-			for (size_t i = 0; !img_seq.empty(); i++)
+            while(!img_seq.empty())
 			{
 				temp_image.emplace(std::move(img_seq.front()));
 				img_seq.pop();
 			}
-			//for (size_t i = 0; !time_seq.empty(); i++)
-			//{
-			//	temp_time.emplace(std::move(time_seq.front()));
-			//	time_seq.pop();
-			//}
 		}
-		for (size_t i = 0; !temp_image.empty(); i++){
+        {
+            lock_guard<std::mutex> l_result_save(result_seq_lock_);
+            while(!result_seq.empty())
+            {
+                temp_result.emplace(std::move(result_seq.front()));
+                result_seq.pop();
+            }
+        }
+        while(!temp_image.empty()){
 			std::string file_name = this->savePath.toStdString() + '/' + std::to_string(this->device_num) + '_';
 			file_name += std::to_string(count) + ".jpg";
 			cv::imwrite(file_name, temp_image.front());
 			temp_image.pop();
-			count++;
+            ++count;
 		}
+        while(!temp_result.empty()){
+            std::string file_name = this->savePath.toStdString() + '/' + std::to_string(this->device_num) + '_';
+            file_name += std::to_string(count) + "_seg.jpg";
+            cv::imwrite(file_name, temp_result.front());
+            temp_result.pop();
+            ++result_cnt;
+        }
 		if (!(is_camera_open_ && isRecord)) {
 			lock_guard<std::mutex> l(image_seq_lock_);
 			if (img_seq.empty())
 			{
-				time_save_event();
+                txt_save_event();
 				return;
 			}			
 		}
@@ -264,7 +355,7 @@ void EEcamera::save_t() {  // 消费者
 
 void EEcamera::release_capture()
 {
-	if (!(capture_worker_ == nullptr))
+    if (capture_worker_)
 	{
 		capture_worker_->join();
 		capture_worker_.reset();
@@ -273,7 +364,7 @@ void EEcamera::release_capture()
 
 void EEcamera::release_show()
 {
-	if (!(show_worker_ == nullptr))
+    if (show_worker_)
 	{
 		show_cond_.notify_all();
 		show_worker_->join();
@@ -283,7 +374,7 @@ void EEcamera::release_show()
 
 void EEcamera::release_save()
 {
-	if (!(save_worker_ == nullptr)) {
+    if (save_worker_) {
 		save_worker_->join();
 		save_worker_.reset();
 	}
@@ -291,7 +382,7 @@ void EEcamera::release_save()
 
 void EEcamera::release_stack()
 {
-	if (!(stack_worker_ == nullptr)) {
+    if (stack_worker_) {
 		stack_cond_.notify_all();
 		stack_worker_->join();
 		stack_worker_.reset();
@@ -368,12 +459,12 @@ void EEcamera::imageSaveEvent()
     else
     {
         this->isRecord = true;
-		stack_pro_ = make_shared <promise<bool>>();
-		stack_pro_->set_value(true);
+//		stack_pro_ = make_shared <promise<bool>>();
+//		stack_pro_->set_value(true);
         ui.endButton->setEnabled(true);
         ui.saveButton->setEnabled(false);
         ui.saveButton->setText("Save");
-		stack_worker_ = make_shared<std::thread>(&EEcamera::stack_t, this);
+//		stack_worker_ = make_shared<std::thread>(&EEcamera::stack_t, this);
 		save_worker_ = make_shared<std::thread>(&EEcamera::save_t, this);
     }
 }

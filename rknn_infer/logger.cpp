@@ -737,6 +737,14 @@ namespace kiwi{
         return false;
     }
 
+    bool string_cmp(const string& s1, const string& s2){
+        return s1 < s2;
+    }
+
+    void sort_files(vector<string> &files){
+        std::sort(files.begin(), files.end(), string_cmp);
+    }
+
 #ifdef U_OS_WINDOWS
     vector<string> find_files(const string& directory, const string& filter, bool findDirectory, bool includeSubDirectory){
         
