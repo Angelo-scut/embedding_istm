@@ -99,20 +99,20 @@ void EEcamera::capture_t()  // 这边肯定是生产者
     clock_t start, end;
     start = end = clock();
 //	show_pro_->set_value(true);
-    std::vector<string> path_vec = kiwi::find_files(root_path + "2_puredata/");
-    kiwi::sort_files(path_vec);
-    uint file_num = 0, files_size = path_vec.size();
+//    std::vector<string> path_vec = kiwi::find_files(root_path + "2_puredata/");
+//    kiwi::sort_files(path_vec);
+//    uint file_num = 0, files_size = path_vec.size();
     while (is_camera_open_)
     {
 		{
 //			unique_lock<std::mutex> l_cap(image_lock_);
-//            flag = this->camera.read(cam); // open which camera
+            flag = this->camera.read(cam); // open which camera
 //            cam = cv::imread(root_path + "0.jpg"); //测试
-            if(file_num > (files_size - 1))
-                file_num = 0;
-            cam = cv::imread(path_vec[file_num]);
+//            if(file_num > (files_size - 1))
+//                file_num = 0;
+//            cam = cv::imread(path_vec[file_num]);
 //            std::cout << path_vec[file_num] << std::endl;
-            ++file_num;
+//            ++file_num;
 			if (!flag) {  // 如果没采集到还可以再继续看能不能恢复
 				continue;
 			}
