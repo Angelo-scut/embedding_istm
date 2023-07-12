@@ -13,6 +13,7 @@ EEcamera::EEcamera(QWidget *parent)
 {
     ui.setupUi(this);
 	QObject::connect(this, SIGNAL(image_show_signal()), this, SLOT(image_show_slot()));
+    QObject::connect(this, SIGNAL(calibrate_signal()), this, SLOT(calibrate_slot()));
 
     QObject::connect(ui.cameraOpenButton, &QPushButton::clicked, this, &EEcamera::cameraOpenEvent);
     QObject::connect(ui.camerCloseButton, &QPushButton::clicked, this, &EEcamera::cameraCloseEvent);
@@ -46,7 +47,6 @@ EEcamera::EEcamera(QWidget *parent)
 void EEcamera::cameraOpenEvent()
 {
 //    bool flag = this->camera.open(this->device_num);
-//    bool flag = this->camera.open(root_path + "1031.mp4");
 //    if (!flag) {
 //        ShowErrorMsg("Failed to Open Camera", 0);
 //        return;
@@ -60,9 +60,9 @@ void EEcamera::cameraOpenEvent()
 //        this->camera.release();
 //        return;
 //    }
-
 //    cam.copyTo(this->myImage);
-    this->myImage = cv::imread(root_path + "0.jpg"); //测试
+
+//    this->myImage = cv::imread(root_path + "0.jpg"); //测试
     this->cx = int(this->myImage.cols / 2); cy = int(this->myImage.rows / 2); w = cx; h = cy;
     this->cx = this->cx - int(w / 2);
     this->cy = this->cy - int(h / 2);
@@ -98,21 +98,18 @@ void EEcamera::capture_t()  // 这边肯定是生产者
     bool flag = true;
     clock_t start, end;
     start = end = clock();
-//	show_pro_->set_value(true);
-//    std::vector<string> path_vec = kiwi::find_files(root_path + "2_puredata/");
-//    kiwi::sort_files(path_vec);
-//    uint file_num = 0, files_size = path_vec.size();
+    std::vector<string> path_vec = kiwi::find_files(root_path + "2_puredata/");
+    kiwi::sort_files(path_vec);
+    uint file_num = 0, files_size = path_vec.size();
     while (is_camera_open_)
     {
 		{
-//			unique_lock<std::mutex> l_cap(image_lock_);
-            flag = this->camera.read(cam); // open which camera
+//            flag = this->camera.read(cam); // open which camera
 //            cam = cv::imread(root_path + "0.jpg"); //测试
-//            if(file_num > (files_size - 1))
-//                file_num = 0;
-//            cam = cv::imread(path_vec[file_num]);
-//            std::cout << path_vec[file_num] << std::endl;
-//            ++file_num;
+            if(file_num > (files_size - 1))
+                file_num = 0;
+            cam = cv::imread(path_vec[file_num]);
+            ++file_num;
 			if (!flag) {  // 如果没采集到还可以再继续看能不能恢复
 				continue;
 			}
@@ -124,6 +121,12 @@ void EEcamera::capture_t()  // 这边肯定是生产者
         if (!this->is_camera_open_) // close and end recording
         {
             return;
+        }
+        if(this->isCalibrate){
+            isCalibrate = false;
+            calibrate_pro_ = make_shared<std::promise<bool>>();
+            emit calibrate_signal();
+            calibrate_pro_->get_future().wait_for(std::chrono::seconds(1));
         }
         {
             lock_guard<std::mutex> l_cap(image_lock_);
@@ -166,6 +169,7 @@ bool EEcamera::get_show_mat() {
 
 void EEcamera::show_t()  // 消费者
 {
+    float fps = 0.f;
     while (true)
 	{
         unique_lock<std::mutex> l_show(image_lock_);
@@ -179,8 +183,8 @@ void EEcamera::show_t()  // 消费者
 			start = clock();
 			model->infer_and_draw(mat_for_show);
 			end = clock();
-			time_int = 1.0 / (float(end - start) / CLOCKS_PER_SEC);
-			cv::putText(mat_for_show, std::to_string(time_int), cv::Point(20, 50), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0));
+            fps = CLOCKS_PER_SEC / (float(end - start) + 1e-12);
+            cv::putText(mat_for_show, std::to_string(fps), cv::Point(20, 50), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0));
             push_detection_result();
         }
 		if (this->roi) {
@@ -205,6 +209,7 @@ void EEcamera::image_show_slot() {
 	if (is_model_load_)
 	{
 		ui.gapWidthEdit->setText(QString::number(model->get_width()));
+//        std::cout << model->get_width() << std::endl;
 		ui.DeviationEdit->setText(QString::number(model->get_deviation()));
 	}
 //	show_pro_->set_value(true);
@@ -519,7 +524,7 @@ void EEcamera::CaptureOnceEvent(){
 
 void EEcamera::modelWidgetState(bool state)
 {
-	ui.calibraButton->setEnabled(state);
+//	ui.calibraButton->setEnabled(state);
 	ui.keyholeClickButton->setEnabled(state);
 	ui.mRoiButton->setEnabled(state);
 	ui.addClickButton->setEnabled(state);
@@ -536,12 +541,15 @@ void EEcamera::keyholeEvent(){
 	isAddClick = false;
 }
 
-void EEcamera::calibrateEvent() {
-	isCalibrate = false;
+void EEcamera::calibrate_slot() {
+//	isCalibrate = false;
 	Size board_size = Size(11, 8);	// 棋盘格内角点个数
 	Size square_size = Size(3, 3);  // 棋盘格实际大小，单位mm
 	std::vector<Point2f> corners;
-	if (!findChessboardCorners(cam, board_size, corners)) return;
+    if (!findChessboardCorners(cam, board_size, corners)) {
+        calibrate_pro_->set_value(false);
+        return;
+    }
 
 	Mat gray_image;
 	cvtColor(cam, gray_image, COLOR_BGR2GRAY);
@@ -559,10 +567,14 @@ void EEcamera::calibrateEvent() {
 	}
 
 	Mat homo = findHomography(corners, objps);
+    homo.convertTo(homo, CV_32FC1);
 	if (is_model_load_)
 	{
 		model->set_homo_matrix(homo);
 	}
+    mat2txt(root_path + "homo_matrix.txt", homo);
+    ShowErrorMsg("Calibration Done!");
+    calibrate_pro_->set_value(true);
 }
 
 void EEcamera::calibrateButtonEvent(){
@@ -712,4 +724,17 @@ void EEcamera::mousePressEvent(QMouseEvent *e){
 		istm::coord click(pos.x(), pos.y(), NEGATIVE);
 		model->add_click(click);
     }
+}
+
+bool mat2txt(const std::string& file, cv::Mat& data){
+    std::ofstream out_file;
+    out_file.open(file, std::ios::out | std::ios::trunc);
+    for(int i =0; i < data.rows; i++){
+        for(int j=0; j<data.cols; j++){
+            out_file << data.at<float>(i, j) << "\t";
+        }
+        out_file << endl;
+    }
+    out_file.close();
+    return true;
 }

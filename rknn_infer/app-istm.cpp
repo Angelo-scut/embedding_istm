@@ -423,21 +423,28 @@ namespace istm{
 //        std_ = std_ > mean ? mean : std_;
 //        int uper = std::ceil(mean + 0.15 * std_);
 //        int downer = std::ceil(mean - 0.15 * std_);
-
+        int uper = mean + 0.1 * mean;
+        int downer = mean - 0.1 * mean;
         std::vector<cv::Point> points;  // 清洗outlier
         int row = rows - 1;
         for (int i = 0; i < rows; ++i)
         {
             int& width = width_vec[i];
-//            if (width < uper && width > downer)
-            if(width > mean)
+            if (width < uper && width > downer)
+//            if(width > mean)
             {
                 if (trace_axis_ == trace_axis::y)
                     points.emplace_back(cv::Point(row - i, pos[i]));
                 else
                     points.emplace_back(cv::Point(pos[i], i));
             }
+            else{
+                width_vec[i] = 0;
+            }
         }
+        int width_ = 0;
+        for_each(width_vec.begin(), width_vec.end(), [&width_](int x){width_ += x;});
+        gap_width_ = (float)width_ / (points.size() + 1e-12);
 
         if (points.empty()) return cv::Vec4f();
         
@@ -502,7 +509,7 @@ namespace istm{
     }
 
     void Istm::deviation(cv::Mat& image, cv::Vec4f& line){
-        cv::Point cross_point(0, 0);
+        cv::Point2f cross_point(0, 0);
         float step = 0.0;
         float vx = line[0], vy = line[1], x0 = line[2], y0 = line[3];
         // printf("%f,%f\n", vx, vy);
@@ -511,8 +518,8 @@ namespace istm{
         float ab2 = k * k + 1;
         cross_point.x = int((keyhole_.x + k * keyhole_.y - k * b) / ab2);
         cross_point.y = int((k * k * keyhole_.y + k * keyhole_.x + b) / ab2);
-        cv::line(image, cv::Point(x0, y0), cross_point, cv::Scalar(0, 255, 0));
-        cv::line(image, keyhole_, cross_point, cv::Scalar(0, 255, 0));
+        cv::line(image, cv::Point(x0, y0), cv::Point(cross_point), cv::Scalar(0, 255, 0));
+        cv::line(image, keyhole_, cv::Point(cross_point), cv::Scalar(0, 255, 0));
         cross_point = homo_transform(cross_point);
         cv::Point2f keyhole_h = homo_transform(keyhole_);
         deviation_ = cv::sqrt(cv::pow((cross_point.x - keyhole_h.x), 2) + cv::pow((cross_point.y - keyhole_h.y), 2));

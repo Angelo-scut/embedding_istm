@@ -34,6 +34,7 @@
 using namespace std;
 int align_32(int value);
 void save_txt(const std::string& file, std::queue<float>& data);
+bool mat2txt(const std::string& file, cv::Mat& data);
 class EEcamera : public QWidget
 {
 	Q_OBJECT
@@ -53,7 +54,6 @@ public:
 
 	void modelWidgetState(bool state);
     void keyholeEvent();
-	void calibrateEvent();
     void calibrateButtonEvent();
     void netRoiEvent();
     void modelLoadEvent();
@@ -96,9 +96,11 @@ public:
     
 signals:
 	void image_show_signal();
+    void calibrate_signal();
 
 public slots:
 	void image_show_slot();
+    void calibrate_slot();
 
 protected:
     void mousePressEvent(QMouseEvent *e);//鼠标点击事件
@@ -137,6 +139,7 @@ private:
 //	shared_ptr<promise<bool>> show_pro_ = make_shared<promise<bool>>();
 //	shared_ptr<promise<bool>> stack_pro_ = make_shared<promise<bool>>();
 //	shared_ptr<promise<bool>> save_pro_ = make_shared<promise<bool>>();
+    shared_ptr<promise<bool>> calibrate_pro_;
 	void release_capture();
 	void release_show();
 	void release_save();
